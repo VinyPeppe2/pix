@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>📲💰PIX simples - Peppe</title>
+
+  <!-- CDN Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    /* --- Styles (kept modern & compact) --- */
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+    :root{
+      --bg1: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      --surface: rgba(255,255,255,0.98);
+      --txt: #2d3748;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --success:#10b981; --error:#ef4444; --info:#3b82f6;
+      --radius:12px; --gap:16px;
+      --shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+    [data-theme="dark"]{ --surface: rgba(30,30,40,0.95); --txt:#f3f4f6; --muted:#cbd5e1; --border:#374151; --bg1: linear-gradient(135deg,#0f172a,#1e293b); }
+    html,body{height:100%; font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:var(--bg1); color:var(--txt); -webkit-font-smoothing:antialiased;}
+    .container{max-width:1200px;margin:24px auto;padding:24px;}
+    .card{background:var(--surface); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); border:1px solid rgba(0,0,0,0.04); margin-bottom:18px;}
+    h1{font-size:1.6rem;margin-bottom:6px}
+    .sub{color:var(--muted); margin-bottom:12px}
+    .tabs{display:flex; gap:8px; margin-top:8px}
+    .tab{padding:8px 12px;border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;font-weight:600}
+    .tab.active{background:var(--surface); color:var(--txt); box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+    .controls{display:flex; gap:8px; align-items:center}
+    .btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+    .btn-primary{background:#6b5ce7;color:#fff}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--txt)}
+    .btn-success{background:var(--success);color:#fff}
+    .btn-small{padding:6px 8px;font-size:0.85rem}
+    .two-col{display:grid; grid-template-columns:1fr 420px; gap:18px}
+    @media (max-width:1000px){ .two-col{grid-template-columns:1fr}}
+    label{display:block;font-weight:700;margin-bottom:6px}
+    input.form, select.form, textarea.form{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border); background:transparent}
+    .qr-box{text-align:center;padding:14px;border-radius:12px;background:rgba(0,0,0,0.02);border:1px solid var(--border)}
+    .qr-canvas{display:inline-block;padding:10px;background:#fff;border-radius:8px}
+    .info-grid{display:grid; gap:8px}
+    .status{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:800;border:1px solid rgba(0,0,0,0.06)}
+    .status-success{background:rgba(16,185,129,0.08);color:#065f46;border-color:rgba(16,185,129,0.15)}
+    .status-warn{background:rgba(245,158,11,0.08);color:#92400e;border-color:rgba(245,158,11,0.12)}
+    .table-wrap{overflow:auto; max-height:420px; border-radius:8px; border:1px solid var(--border)}
+    table.data{width:100%; border-collapse:collapse}
+    table.data th, table.data td{padding:10px;border-bottom:1px solid var(--border); text-align:left; font-size:0.95rem;background:var(--surface)}
+    table.data thead th{position:sticky; top:0; background:var(--surface); font-weight:700}
+    .muted{color:var(--muted)}
+    .toast{position:fixed; right:20px; top:20px; padding:12px 16px;border-radius:8px;color:#fff; z-index:9999}
+    .toast.info{background:var(--info)} .toast.success{background:var(--success)} .toast.error{background:var(--error)} .toast.warn{background:#f59e0b}
+    .pagination{display:flex; gap:6px; align-items:center}
+    .page-btn{padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer}
+    .small{font-size:0.85rem}
+    .form-error{color:var(--error); font-size:0.85rem; margin-top:6px; display:none}
+  </style>
+</head>
+<body data-theme="light">
+  <div class="container">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap">
+        <div>
+          <h1>📲💰PIX simples — Peppe</h1>
+          <div class="sub">Geração e gestão de cobranças PIX — com validação reforçada, export PDF estilo tabela e melhorias gerais.</div>
+          <div class="tabs">
+            <div class="tab active" id="tab-gen">Gerar Cobrança</div>
+            <div class="tab" id="tab-hist">Histórico</div>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn btn-ghost" id="btn-receiver-config">Configurar Recebedor</button>
+          <button class="btn btn-ghost" id="btn-export-import">Dados</button>
+          <button class="btn btn-ghost" id="btn-theme">🌙</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generate View -->
+    <div id="view-gen" class="card">
+      <div class="two-col">
+        <div>
+          <h3>Nova Cobrança PIX</h3>
+          <div style="margin-top:12px">
+            <label for="amount">Valor (R$) <span class="muted small">opcional para QR dinâmico</span></label>
+            <input id="amount" class="form" type="number" step="0.01" min="0" placeholder="0,00" />
+            <div id="amount-error" class="form-error"></div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label for="description">Descrição (até 72 chars)</label>
+            <input id="description" class="form" maxlength="72" placeholder="Ex: Venda - Produto ABC..." />
+          </div>
+
+          <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
+            <button class="btn btn-primary" id="btn-generate">Gerar QR Code PIX</button>
+            <button class="btn btn-ghost" id="btn-clear">Limpar Campos</button>
+          </div>
+
+          <details style="margin-top:12px; border-radius:8px; padding:8px; border:1px solid var(--border);">
+            <summary style="font-weight:700; cursor:pointer">Informações do Pagador (Opcional)</summary>
+            <div style="margin-top:10px">
+              <label for="payer-key-type">Tipo de chave do pagador</label>
+              <select id="payer-key-type" class="form"></select>
+
+              <div style="margin-top:8px">
+                <label for="payer-key">Chave do pagador</label>
+                <input id="payer-key" class="form" placeholder="CPF, telefone, e-mail..." />
+                <div id="payer-key-error" class="form-error"></div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center">
+            <h3>QR Code</h3>
+            <div id="receiver-status" class="status status-warn">Não configurado</div>
+          </div>
+
+          <div class="qr-box" style="margin-top:12px">
+            <div id="qr-canvas" class="qr-canvas"></div>
+            <pre id="payload" style="display:none; text-align:left; max-height:120px; overflow:auto; margin-top:8px; font-size:0.8rem; background:rgba(0,0,0,0.03); padding:8px; border-radius:6px;"></pre>
+
+            <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap">
+              <button class="btn btn-success btn-small" id="btn-download" disabled>Baixar PNG</button>
+              <button class="btn btn-ghost btn-small" id="btn-copy" disabled>Copiar Código</button>
+              <button class="btn btn-ghost btn-small" id="btn-view-payload" style="display:none;">Ver Código</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; padding:12px; border-radius:8px; border:1px solid var(--border)">
+            <h4 style="margin:0 0 8px 0">Informações da Cobrança</h4>
+            <div class="info-grid small">
+              <div><strong>ID:</strong> <span id="current-id">-</span></div>
+              <div><strong>Valor:</strong> <span id="current-amount" min="0,01">R$ 0,00</span></div>
+              <div><strong>Status:</strong> <span id="current-status" class="status status-warn">Nenhuma cobrança</span></div>
+              <div><strong>Criado:</strong> <span id="current-created" class="muted">-</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Config Panel (inline) -->
+      <div id="config-panel" class="card" style="display:none; margin-top:14px">
+        <h4>Configuração do Recebedor PIX</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px">
+          <div>
+            <label for="cfg-key-type">Tipo de Chave PIX</label>
+            <select id="cfg-key-type" class="form"></select>
+            <div id="cfg-pix-key-error" class="form-error"></div>
+          </div>
+          <div>
+            <label for="cfg-pix-key">Chave PIX</label>
+            <input id="cfg-pix-key" class="form" />
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px">
+          <div>
+            <label for="cfg-name">Nome do Recebedor (comprovante)</label>
+            <input id="cfg-name" class="form" maxlength="25" />
+            <div id="cfg-name-error" class="form-error"></div>
+          </div>
+          <div>
+            <label for="cfg-city">Cidade</label>
+            <input id="cfg-city" class="form" maxlength="15" />
+            <div id="cfg-city-error" class="form-error"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-success" id="btn-save-config">Salvar</button>
+          <button class="btn btn-ghost" id="btn-cancel-config">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- History View -->
+    <div id="view-hist" class="card" style="display:none">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap">
+        <h3>Histórico</h3>
+        <div class="muted" id="hist-stats">0 registros</div>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">
+        <input id="filter-search" class="form" placeholder="Buscar por nome, txid, chave..." style="flex:1; min-width:160px"/>
+        <select id="filter-status" class="form" style="width:160px">
+          <option value="all">Todos</option>
+          <option value="pending">Pendentes</option>
+          <option value="received">Recebidos</option>
+        </select>
+        <button class="btn btn-primary btn-small" id="btn-apply-filter">Filtrar</button>
+        <button class="btn btn-ghost btn-small" id="btn-reset-filter">Limpar</button>
+      </div>
+
+      <div class="table-wrap" style="margin-top:12px">
+        <table class="data" id="history-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Nome</th><th>Chave</th><th>Valor</th><th>Status</th><th>Data</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="7" style="text-align:center;padding:40px" class="muted">Nenhuma cobrança ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap">
+        <div class="pagination" style="gap:6px">
+          <button class="page-btn" id="prev-page">Anterior</button>
+          <div id="page-info" class="small muted">Página 1</div>
+          <button class="page-btn" id="next-page">Próxima</button>
+        </div>
+        <div style="display:flex; gap:8px">
+          <button class="btn btn-ghost" id="btn-clear-history">Limpar Histórico</button>
+          <button class="btn btn-ghost" id="btn-export-pdf">Exportar PDF (Tabela)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export/Import Modal -->
+    <div id="modal-export-import" class="card" style="display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2000; width:600px;">
+      <h3>Gerenciar Dados</h3>
+      <div class="muted small" style="margin-top:8px">Exporte/importe histórico local.</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px">
+        <button class="btn btn-ghost" id="exp-json">Exportar JSON</button>
+        <button class="btn btn-ghost" id="exp-xlsx">Exportar Excel</button>
+        <button class="btn btn-ghost" id="exp-pdf-modal">Exportar PDF</button>
+        <button class="btn btn-ghost" id="imp-json">Importar JSON</button>
+      </div>
+      <input type="file" id="file-import" accept=".json" style="display:none" />
+      <div style="margin-top:12px; display:flex; justify-content:flex-end">
+        <button class="btn btn-primary" id="modal-close">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================
+       PIX MANAGER PRO - REVISADO
+       Implementações:
+       - Validação reforçada
+       - PDF estilo tabela com autoTable
+       - Sanitização (escapeHTML)
+       - Persist last QR
+       - Paginação simples no histórico
+       ========================= */
+
+    // DB / store constants
+    const DB_NAME = 'pix_manager_pro';
+    const DB_VERSION = 1;
+    const STORE_HISTORY = 'history';
+    const STORE_CONFIG = 'config';
+    let db = null;
+
+    // helpers: open indexeddb
+    function openDB(){
+      return new Promise((res, rej) => {
+        if (db) return res(db);
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const idb = e.target.result;
+          if (!idb.objectStoreNames.contains(STORE_HISTORY)) idb.createObjectStore(STORE_HISTORY, { keyPath:'id', autoIncrement:true });
+          if (!idb.objectStoreNames.contains(STORE_CONFIG)) idb.createObjectStore(STORE_CONFIG, { keyPath:'key' });
+        };
+        req.onsuccess = e => { db = e.target.result; res(db); };
+        req.onerror = e => rej(e);
+      });
+    }
+
+    function idbPut(storeName, value){
+      return openDB().then(db => new Promise((res, rej) => {
+        const tx = db.transaction(storeName, 'readwrite');
+        const st = tx.objectStore(storeName);
+        const r = st.put(value);
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      }));
+    }
+
+    function idbGetAll(storeName){ return openDB().then(db => new Promise((res, rej) => {
+      const tx = db.transaction(storeName, 'readonly'); const st = tx.objectStore(storeName);
+      const r = st.getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    })); }
+
+    function idbGet(storeName, key){ return openDB().then(db => new Promise((res, rej) => {
+      const tx = db.transaction(storeName, 'readonly'); const st = tx.objectStore(storeName);
+      const r = st.get(key); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    })); }
+
+    function idbDelete(storeName, key){ return openDB().then(db => new Promise((res, rej) => {
+      const tx = db.transaction(storeName, 'readwrite'); const st = tx.objectStore(storeName);
+      const r = st.delete(key); r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+    })); }
+
+    function idbClear(storeName){ return openDB().then(db => new Promise((res, rej) => {
+      const tx = db.transaction(storeName, 'readwrite'); const st = tx.objectStore(storeName);
+      const r = st.clear(); r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+    })); }
+
+    // Utilities
+    function genTXID(){ return Math.random().toString(36).substring(2,12).toUpperCase(); }
+    function formatBRL(v){ const num = Number(v||0); return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(num); }
+    function escapeHTML (str) {
+      if (!str && str !== 0) return '';
+      return String(str).replace(/[&<>"'`=\/]/g, function (s) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'}[s];
+      });
+    }
+
+    // CRC16 (unchanged)
+    function generateCRC16(payload){
+      let crc = 0xFFFF; const polynomial = 0x1021;
+      for (let i = 0; i < payload.length; i++) {
+        crc ^= (payload.charCodeAt(i) << 8);
+        for (let j = 0; j < 8; j++) {
+          if (crc & 0x8000) crc = ((crc << 1) ^ polynomial) & 0xFFFF;
+          else crc = (crc << 1) & 0xFFFF;
+        }
+      }
+      return crc.toString(16).toUpperCase().padStart(4,'0');
+    }
+
+    function formatEMVField(tag, value){
+      const len = String(value.length).padStart(2,'0');
+      return `${tag}${len}${value}`;
+    }
+
+    // Key types & helpers
+    const KEY_TYPES = {
+      cpf: { label:'CPF', placeholder:'000.000.000-00' },
+      cnpj: { label:'CNPJ', placeholder:'00.000.000/0000-00' },
+      email: { label:'E-mail', placeholder:'seu@email.com' },
+      phone: { label:'Telefone', placeholder:'+55 (11) 99999-9999' },
+      random: { label:'Chave Aleatória', placeholder:'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' }
+    };
+
+    // DOM refs
+    const D = {
+      tabGen: document.getElementById('tab-gen'),
+      tabHist: document.getElementById('tab-hist'),
+      viewGen: document.getElementById('view-gen'),
+      viewHist: document.getElementById('view-hist'),
+      amount: document.getElementById('amount'),
+      amountError: document.getElementById('amount-error'),
+      description: document.getElementById('description'),
+      btnGenerate: document.getElementById('btn-generate'),
+      btnClear: document.getElementById('btn-clear'),
+      payerKeyType: document.getElementById('payer-key-type'),
+      payerKey: document.getElementById('payer-key'),
+      payerKeyError: document.getElementById('payer-key-error'),
+      qrCanvas: document.getElementById('qr-canvas'),
+      payload: document.getElementById('payload'),
+      btnDownload: document.getElementById('btn-download'),
+      btnCopy: document.getElementById('btn-copy'),
+      btnViewPayload: document.getElementById('btn-view-payload'),
+      receiverStatus: document.getElementById('receiver-status'),
+      currentId: document.getElementById('current-id'),
+      currentAmount: document.getElementById('current-amount'),
+      currentStatus: document.getElementById('current-status'),
+      currentCreated: document.getElementById('current-created'),
+      btnReceiverConfig: document.getElementById('btn-receiver-config'),
+      btnOpenConfig: document.getElementById('btn-receiver-config'),
+      configPanel: document.getElementById('config-panel'),
+      cfgKeyType: document.getElementById('cfg-key-type'),
+      cfgPixKey: document.getElementById('cfg-pix-key'),
+      cfgPixKeyError: document.getElementById('cfg-pix-key-error'),
+      cfgName: document.getElementById('cfg-name'),
+      cfgNameError: document.getElementById('cfg-name-error'),
+      cfgCity: document.getElementById('cfg-city'),
+      cfgCityError: document.getElementById('cfg-city-error'),
+      btnSaveConfig: document.getElementById('btn-save-config'),
+      btnCancelConfig: document.getElementById('btn-cancel-config'),
+      filterSearch: document.getElementById('filter-search'),
+      filterStatus: document.getElementById('filter-status'),
+      btnApplyFilter: document.getElementById('btn-apply-filter'),
+      btnResetFilter: document.getElementById('btn-reset-filter'),
+      historyBody: document.getElementById('history-body'),
+      histStats: document.getElementById('hist-stats'),
+      btnClearHistory: document.getElementById('btn-clear-history'),
+      btnTheme: document.getElementById('btn-theme'),
+      btnExportImport: document.getElementById('btn-export-import'),
+      modalExportImport: document.getElementById('modal-export-import'),
+      fileImport: document.getElementById('file-import'),
+      expJson: document.getElementById('exp-json'),
+      expXlsx: document.getElementById('exp-xlsx'),
+      expPdfModal: document.getElementById('exp-pdf-modal'),
+      impJson: document.getElementById('imp-json'),
+      modalClose: document.getElementById('modal-close'),
+      btnExportPDFTable: document.getElementById('btn-export-pdf'),
+      prevPage: document.getElementById('prev-page'),
+      nextPage: document.getElementById('next-page'),
+      pageInfo: document.getElementById('page-info'),
+      btnExportImportOpen: document.getElementById('btn-export-import'),
+    };
+
+    // App state
+    let receiverConfig = null;
+    let lastQR = null;
+    let qrInstance = null;
+
+    // Pagination
+    let PAGE_SIZE = 12;
+    let CURRENT_PAGE = 1;
+    let LAST_FILTERED = [];
+
+    // Input mask / format helpers
+    const onlyDigits = v => (v||'').replace(/\D/g, '');
+
+    function maskCPF(v){ const d = onlyDigits(v).slice(0,11); return d.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, (m,a,b,c,d)=> `${a}.${b}.${c}${d?'-'+d:''}`); }
+    function maskCNPJ(v){ const d=onlyDigits(v).slice(0,14); return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, (m,a,b,c,d,e)=> `${a}.${b}.${c}/${d}${e?'-'+e:''}`); }
+    function maskPhone(v){ let d=onlyDigits(v); if(d.startsWith('55')) d=d.slice(2); d=d.slice(0,11); if(d.length<=2) return `+55 (${d}`; if(d.length<=6) return `+55 (${d.slice(0,2)}) ${d.slice(2)}`; if(d.length<=10) return `+55 (${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return `+55 (${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; }
+    function maskUUID(v){ const d=(v||'').replace(/[^0-9a-fA-F]/g,'').slice(0,32); return d.replace(/(.{8})(.{4})(.{4})(.{4})(.{0,12})/, (m,a,b,c,d,e)=> `${a}${b?'-'+b:''}${c?'-'+c:''}${d?'-'+d:''}${e?'-'+e:''}`); }
+
+    // Stronger validators
+    function validateCPF(c){
+      c = onlyDigits(c);
+      if (c.length !== 11) return false;
+      if (/^(\d)\1+$/.test(c)) return false;
+      // calculation (standard)
+      let sum = 0, rest;
+      for (let i = 1; i <= 9; i++) sum += parseInt(c.charAt(i-1)) * (11 - i);
+      rest = (sum * 10) % 11; if (rest === 10 || rest === 11) rest = 0;
+      if (rest !== parseInt(c.charAt(9))) return false;
+      sum = 0;
+      for (let i = 1; i <= 10; i++) sum += parseInt(c.charAt(i-1)) * (12 - i);
+      rest = (sum * 10) % 11; if (rest === 10 || rest === 11) rest = 0;
+      if (rest !== parseInt(c.charAt(10))) return false;
+      return true;
+    }
+
+    function validateCNPJ(c){
+      c = onlyDigits(c);
+      if (c.length !== 14) return false;
+      if (/^(\d)\1+$/.test(c)) return false;
+      let length = c.length - 2;
+      let numbers = c.substring(0, length);
+      let digits = c.substring(length);
+      let sum = 0;
+      let pos = length - 7;
+      for (let i = length; i >= 1; i--) {
+        sum += numbers.charAt(length - i) * pos--;
+        if (pos < 2) pos = 9;
+      }
+      let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+      if (result != digits.charAt(0)) return false;
+      length = length + 1;
+      numbers = c.substring(0, length);
+      sum = 0;
+      pos = length - 7;
+      for (let i = length; i >= 1; i--) {
+        sum += numbers.charAt(length - i) * pos--;
+        if (pos < 2) pos = 9;
+      }
+      result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+      if (result != digits.charAt(1)) return false;
+      return true;
+    }
+
+    // stricter email regex (RFC-like simplified)
+    function validateEmail(e){
+      if (!e) return false;
+      e = e.trim();
+      if (e.length > 77) return false;
+      const re = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+      return re.test(e);
+    }
+
+    // Phone: expect DDD + 8/9 digits (with or without leading country code)
+    function validatePhone(v){
+      if (!v) return false;
+      let d = onlyDigits(v);
+      // Accept formats: 10 (DD + 8) or 11 (DD + 9) OR prefixed with 55 -> 12/13
+      if (d.startsWith('55')) d = d.slice(2);
+      if (d.length === 10 || d.length === 11) {
+        const ddd = d.slice(0,2);
+        if (ddd === '00' || ddd === '01') return false; // invalid DDDs basic check
+        return true;
+      }
+      return false;
+    }
+
+    function validateUUID(u){ return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u); }
+
+    // UI Helpers
+    function showToast(msg, type='info'){
+      const t = document.createElement('div'); t.className = `toast ${type}`;
+      t.textContent = msg; document.body.appendChild(t);
+      setTimeout(()=> t.style.opacity = '1', 50);
+      setTimeout(()=> { t.style.opacity = '0'; setTimeout(()=> document.body.removeChild(t), 400); }, 3500);
+    }
+
+    function showFieldError(el, msg){
+      if (!el) return;
+      el.style.display = 'block';
+      el.textContent = msg;
+    }
+    function hideFieldError(el){ if (!el) return; el.style.display = 'none'; el.textContent = ''; }
+
+    // setup selects
+    function setupKeySelects(){
+      [D.payerKeyType, D.cfgKeyType].forEach(select => {
+        Object.keys(KEY_TYPES).forEach(k => {
+          const opt = document.createElement('option'); opt.value = k; opt.textContent = KEY_TYPES[k].label;
+          select.appendChild(opt);
+        });
+      });
+      // set defaults
+      D.payerKeyType.value = 'cpf';
+      D.cfgKeyType.value = 'cpf';
+    }
+
+    // Masks + placeholder updates
+    function setupInputMasks(){
+      D.payerKey.addEventListener('input', () => {
+        const keyType = D.payerKeyType.value;
+        switch(keyType){
+          case 'cpf': D.payerKey.value = maskCPF(D.payerKey.value); break;
+          case 'cnpj': D.payerKey.value = maskCNPJ(D.payerKey.value); break;
+          case 'phone': D.payerKey.value = maskPhone(D.payerKey.value); break;
+          case 'random': D.payerKey.value = maskUUID(D.payerKey.value); break;
+        }
+      });
+
+      D.cfgPixKey.addEventListener('input', () => {
+        const keyType = D.cfgKeyType.value;
+        switch(keyType){
+          case 'cpf': D.cfgPixKey.value = maskCPF(D.cfgPixKey.value); break;
+          case 'cnpj': D.cfgPixKey.value = maskCNPJ(D.cfgPixKey.value); break;
+          case 'phone': D.cfgPixKey.value = maskPhone(D.cfgPixKey.value); break;
+          case 'random': D.cfgPixKey.value = maskUUID(D.cfgPixKey.value); break;
+        }
+      });
+
+      [D.payerKeyType, D.cfgKeyType].forEach(select => {
+        select.addEventListener('change', () => {
+          const keyType = select.value;
+          const placeholder = KEY_TYPES[keyType]?.placeholder || '';
+          if (select === D.payerKeyType) D.payerKey.placeholder = placeholder;
+          if (select === D.cfgKeyType) D.cfgPixKey.placeholder = placeholder;
+        });
+      });
+    }
+
+    // Receiver config load/save
+    async function loadReceiverConfig(){
+      try {
+        const cfg = await idbGet(STORE_CONFIG, 'receiver');
+        if (cfg && cfg.value) {
+          receiverConfig = cfg.value;
+          updateReceiverStatus();
+          populateConfigForm();
+        } else {
+          receiverConfig = null;
+          updateReceiverStatus();
+        }
+      } catch(e) {
+        console.error('loadReceiverConfig', e);
+        receiverConfig = null; updateReceiverStatus();
+      }
+    }
+
+    function updateReceiverStatus(){
+      if (receiverConfig) {
+        D.receiverStatus.textContent = `Configurado: ${escapeHTML(receiverConfig.name)}`;
+        D.receiverStatus.className = 'status status-success';
+      } else {
+        D.receiverStatus.textContent = 'Não configurado';
+        D.receiverStatus.className = 'status status-warn';
+      }
+    }
+
+    function populateConfigForm(){
+      if (!receiverConfig) return;
+      D.cfgKeyType.value = receiverConfig.keyType || 'cpf';
+      D.cfgPixKey.value = receiverConfig.pixKey || '';
+      D.cfgName.value = receiverConfig.name || '';
+      D.cfgCity.value = receiverConfig.city || '';
+    }
+
+    function validateConfig(){
+      let valid = true;
+      const keyType = D.cfgKeyType.value;
+      const pixKeyRaw = (D.cfgPixKey.value||'').trim();
+      const name = (D.cfgName.value||'').trim();
+      const city = (D.cfgCity.value||'').trim();
+
+      if (!pixKeyRaw) { showFieldError(D.cfgPixKeyError, 'Chave PIX é obrigatória.'); valid = false; }
+      else {
+        let keyValid = false;
+        switch(keyType){
+          case 'cpf': keyValid = validateCPF(pixKeyRaw); break;
+          case 'cnpj': keyValid = validateCNPJ(pixKeyRaw); break;
+          case 'email': keyValid = validateEmail(pixKeyRaw); break;
+          case 'phone': keyValid = validatePhone(pixKeyRaw); break;
+          case 'random': keyValid = validateUUID(pixKeyRaw); break;
+        }
+        if (!keyValid) { showFieldError(D.cfgPixKeyError, `${KEY_TYPES[keyType].label} inválida.`); valid = false; }
+        else hideFieldError(D.cfgPixKeyError);
+      }
+
+      if (!name || name.length > 25) { showFieldError(D.cfgNameError, 'Nome obrigatório (até 25 caracteres).'); valid = false; }
+      else hideFieldError(D.cfgNameError);
+
+      if (!city || city.length > 15) { showFieldError(D.cfgCityError, 'Cidade obrigatória (até 15 caracteres).'); valid = false; }
+      else hideFieldError(D.cfgCityError);
+
+      return valid;
+    }
+
+    async function saveReceiverConfig(){
+      if (!validateConfig()) { showToast('Corrija os dados do recebedor.', 'error'); return; }
+      const existing = await idbGet(STORE_CONFIG, 'receiver').catch(()=>null);
+      const receiverId = (existing && existing.value && existing.value.receiverId) ? existing.value.receiverId : 'RCV-' + Date.now().toString(36).toUpperCase();
+      const config = {
+        receiverId,
+        keyType: D.cfgKeyType.value,
+        pixKey: D.cfgPixKey.value.trim(),
+        name: D.cfgName.value.trim(),
+        city: D.cfgCity.value.trim()
+      };
+      await idbPut(STORE_CONFIG, { key:'receiver', value: config });
+      receiverConfig = config;
+      updateReceiverStatus();
+      closeConfigPanel();
+      showToast('Recebedor configurado!', 'success');
+    }
+
+    function openConfigPanel(){ D.configPanel.style.display = 'block'; populateConfigForm(); }
+    function closeConfigPanel(){ D.configPanel.style.display = 'none'; }
+
+    // Format key for payload
+    function formatKeyForPayload(keyType, keyValue){
+      let key = (keyValue||'').trim();
+      if (keyType === 'cpf' || keyType === 'cnpj') key = onlyDigits(key);
+      if (keyType === 'phone') {
+        let digits = onlyDigits(key);
+        if (!digits.startsWith('55')) digits = '55' + digits;
+        key = '+' + digits;
+      }
+      return key;
+    }
+
+    // Build PIX payload (keeps original structure)
+    function buildPixPayload({ keyType, pixKey, name, city, amount = 0, description = '', txid = '' }){
+      const pixDomain = 'BR.GOV.BCB.PIX';
+      let payload = '';
+      payload += formatEMVField('00','01');
+      payload += formatEMVField('01', amount > 0 ? '12' : '11');
+      const merchantAccount = formatEMVField('00', pixDomain) + formatEMVField('01', pixKey);
+      payload += formatEMVField('26', merchantAccount);
+      payload += formatEMVField('52','0000');
+      payload += formatEMVField('53','986');
+      if (amount > 0) payload += formatEMVField('54', Number(amount).toFixed(2));
+      payload += formatEMVField('58','BR');
+      payload += formatEMVField('59', name.substring(0,25));
+      payload += formatEMVField('60', city.substring(0,15));
+      let additionalInfo = '';
+      if (description) additionalInfo += formatEMVField('50', description.substring(0,72));
+      additionalInfo += formatEMVField('05', txid);
+      payload += formatEMVField('62', additionalInfo);
+      payload += '6304';
+      const crc = generateCRC16(payload);
+      payload += crc;
+      return payload;
+    }
+
+    // QR Control
+    function clearQR(){
+      D.qrCanvas.innerHTML = '';
+      D.payload.style.display = 'none';
+      D.btnDownload.disabled = true;
+      D.btnCopy.disabled = true;
+      D.btnViewPayload.style.display = 'none';
+      if (qrInstance && qrInstance.clear) try{ qrInstance.clear(); }catch(e){}
+      lastQR = null; localStorage.removeItem('pix_last_id');
+    }
+
+    // Payer key validation (on generate)
+    function validatePayerKey(){
+      const keyType = D.payerKeyType.value;
+      const keyValue = (D.payerKey.value||'').trim();
+      if (!keyValue) { hideFieldError(D.payerKeyError); return true; }
+      let valid = false;
+      switch(keyType){
+        case 'cpf': valid = validateCPF(keyValue); break;
+        case 'cnpj': valid = validateCNPJ(keyValue); break;
+        case 'email': valid = validateEmail(keyValue); break;
+        case 'phone': valid = validatePhone(keyValue); break;
+        case 'random': valid = validateUUID(keyValue); break;
+      }
+      if (!valid) { showFieldError(D.payerKeyError, `${KEY_TYPES[keyType].label} inválida.`); return false; }
+      hideFieldError(D.payerKeyError); return true;
+    }
+
+    function validateGeneration(){
+      if (!receiverConfig) { showToast('Configure o recebedor primeiro.', 'error'); openConfigPanel(); return false; }
+      const amount = parseFloat(D.amount.value || 0);
+      if (amount < 0) { showFieldError(D.amountError,'Valor não pode ser negativo.'); return false; }
+      hideFieldError(D.amountError);
+      return validatePayerKey();
+    }
+
+    // Generate QR
+    async function generateQR(){
+      if (!validateGeneration()) return;
+      const generateBtn = D.btnGenerate; const originalText = generateBtn.textContent;
+      generateBtn.textContent = 'Gerando...'; generateBtn.disabled = true;
+      try {
+        clearQR();
+        const amount = parseFloat(D.amount.value || 0);
+        const description = (D.description.value||'').trim();
+        const txid = genTXID();
+        const keyType = receiverConfig.keyType;
+        const pixKey = formatKeyForPayload(keyType, receiverConfig.pixKey);
+        const name = (receiverConfig.name||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const city = (receiverConfig.city||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const payload = buildPixPayload({ keyType, pixKey, name, city, amount, description, txid });
+
+        // generate QR
+        D.qrCanvas.innerHTML = '';
+        qrInstance = new QRCode(D.qrCanvas, { text: payload, width:280, height:280, correctLevel: QRCode.CorrectLevel.M });
+
+        D.payload.textContent = payload; D.payload.style.display = 'block';
+        D.btnDownload.disabled = false; D.btnCopy.disabled = false; D.btnViewPayload.style.display = 'inline-block';
+
+        // save to DB
+        const record = {
+          payload, txid, pixKey, keyType, name, city, amount: Number(amount||0), description,
+          status: 'pending', createdAt: new Date().toISOString(),
+          payerKey: D.payerKey.value.trim() || '', payerKeyType: D.payerKeyType.value || '',
+          receiverId: receiverConfig.receiverId
+        };
+        const id = await idbPut(STORE_HISTORY, record);
+        record.id = id;
+        lastQR = record;
+        localStorage.setItem('pix_last_id', String(record.id));
+        updateCurrentCharge(record);
+        await refreshHistoryTable();
+        showToast('QR Code gerado!', 'success');
+      } catch(e){
+        console.error('generateQR', e);
+        showToast('Erro ao gerar QR Code.', 'error');
+      } finally {
+        generateBtn.textContent = originalText; generateBtn.disabled = false;
+      }
+    }
+
+    function updateCurrentCharge(record){
+      if (!record) {
+        D.currentId.textContent = '-'; D.currentAmount.textContent = formatBRL(0);
+        D.currentStatus.textContent = 'Nenhuma cobrança'; D.currentStatus.className = 'status status-warn';
+        D.currentCreated.textContent = '-'; return;
+      }
+      D.currentId.textContent = '#' + record.id;
+      D.currentAmount.textContent = formatBRL(record.amount);
+      D.currentStatus.textContent = record.status === 'received' ? 'Recebido' : 'Pendente';
+      D.currentStatus.className = record.status === 'received' ? 'status status-success' : 'status status-warn';
+      D.currentCreated.textContent = new Date(record.createdAt).toLocaleString('pt-BR');
+    }
+
+    // History management
+    async function fetchHistory(){ try { return await idbGetAll(STORE_HISTORY) || []; } catch(e){ console.error('fetchHistory', e); return []; } }
+
+    function applyHistoryFilters(records){
+      const search = (D.filterSearch.value||'').toLowerCase().trim();
+      const status = D.filterStatus.value;
+      return records.filter(record => {
+        if (search) {
+          const text = [record.pixKey||'', record.name||'', record.txid||'', record.payerKey||'', record.description||''].join(' ').toLowerCase();
+          if (!text.includes(search)) return false;
+        }
+        if (status !== 'all' && record.status !== status) return false;
+        return true;
+      });
+    }
+
+    async function refreshHistoryTable(){
+      try {
+        const records = await fetchHistory();
+        let filtered = applyHistoryFilters(records);
+        filtered.sort((a,b) => (b.id||0)-(a.id||0));
+
+        LAST_FILTERED = filtered;
+        // pagination
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (CURRENT_PAGE > totalPages) CURRENT_PAGE = totalPages;
+        const start = (CURRENT_PAGE-1)*PAGE_SIZE;
+        const pageRecords = filtered.slice(start, start + PAGE_SIZE);
+
+        // update stats
+        const pendingCount = filtered.filter(r=>r.status==='pending').length;
+        const receivedCount = filtered.filter(r=>r.status==='received').length;
+        const totalValue = filtered.reduce((s,r)=>s+(Number(r.amount)||0), 0);
+        D.histStats.textContent = `${filtered.length} registros • ${pendingCount} pendentes • ${receivedCount} recebidos • ${formatBRL(totalValue)}`;
+
+        // render table
+        if (pageRecords.length === 0){
+          D.historyBody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px" class="muted">Nenhuma cobrança encontrada.</td></tr>`;
+        } else {
+          D.historyBody.innerHTML = pageRecords.map(r => {
+            const statusLabel = r.status === 'received' ? 'Recebido' : 'Pendente';
+            const statusClass = r.status === 'received' ? 'status-success' : 'status-warn';
+            const keyDisplay = escapeHTML((r.pixKey||'').toString()).substring(0,28) + ((r.pixKey||'').length>28?'...':'');
+            return `<tr>
+              <td><strong>#${r.id}</strong></td>
+              <td>${escapeHTML(r.name||'-')}</td>
+              <td style="font-family:monospace">${keyDisplay}</td>
+              <td><strong>${formatBRL(r.amount)}</strong></td>
+              <td><span class="status ${statusClass}">${statusLabel}</span></td>
+              <td>${new Date(r.createdAt).toLocaleString('pt-BR')}</td>
+              <td>
+                <button class="btn btn-success btn-small" onclick="toggleStatus(${r.id})">${r.status === 'pending' ? '✓' : '⏳'}</button>
+                <button class="btn btn-ghost btn-small" onclick="previewQR(${r.id})">👁</button>
+                <button class="btn btn-ghost btn-small" onclick="deleteRecord(${r.id})">🗑</button>
+              </td>
+            </tr>`;
+          }).join('');
+        }
+
+        D.pageInfo.textContent = `Página ${CURRENT_PAGE} / ${Math.max(1, Math.ceil(filtered.length/PAGE_SIZE))}`;
+      } catch(e){ console.error('refreshHistoryTable', e); showToast('Erro ao carregar histórico.', 'error'); }
+    }
+
+    // window functions for row actions
+    window.toggleStatus = async function(id){
+      try {
+        const record = await idbGet(STORE_HISTORY, id);
+        if (!record) return;
+        const newStatus = record.status === 'pending' ? 'received' : 'pending';
+        if (!confirm(`Marcar como ${newStatus.toUpperCase()}?`)) return;
+        record.status = newStatus;
+        await idbPut(STORE_HISTORY, record);
+        if (lastQR && lastQR.id === record.id){ lastQR = record; updateCurrentCharge(record); }
+        await refreshHistoryTable();
+        showToast('Status atualizado.', 'success');
+      } catch(e){ console.error('toggleStatus', e); showToast('Erro ao alterar status.', 'error'); }
+    };
+
+    window.previewQR = async function(id){
+      try {
+        const record = await idbGet(STORE_HISTORY, id);
+        if (!record) return;
+        clearQR();
+        qrInstance = new QRCode(D.qrCanvas, { text: record.payload, width:280, height:280, correctLevel: QRCode.CorrectLevel.M });
+        D.payload.textContent = record.payload; D.payload.style.display='block';
+        D.btnDownload.disabled=false; D.btnCopy.disabled=false; D.btnViewPayload.style.display='inline-block';
+        lastQR = record; localStorage.setItem('pix_last_id', String(record.id));
+        updateCurrentCharge(record);
+        // switch to generate tab
+        switchTab(D.tabGen, D.viewGen);
+        showToast('QR Code carregado.', 'info');
+      } catch(e){ console.error('previewQR', e); showToast('Erro ao visualizar QR Code.', 'error'); }
+    };
+
+    window.deleteRecord = async function(id){
+      if (!confirm('Excluir este registro?')) return;
+      try {
+        await idbDelete(STORE_HISTORY, id);
+        if (lastQR && lastQR.id === id) { lastQR = null; clearQR(); updateCurrentCharge(null); }
+        await refreshHistoryTable();
+        showToast('Registro excluído.', 'success');
+      } catch(e){ console.error('deleteRecord', e); showToast('Erro ao excluir registro.', 'error'); }
+    };
+
+    // Download QR / copy payload
+    function downloadQR(){
+      const canvas = D.qrCanvas.querySelector('canvas');
+      if (!canvas) { showToast('Gere um QR Code primeiro.', 'error'); return; }
+      canvas.toBlob(blob => {
+        const filename = `pix-qr-${lastQR?.id || 'export'}.png`;
+        saveAs(blob, filename);
+        showToast('QR Code baixado!', 'success');
+      });
+    }
+
+    function copyPayload(){
+      if (!lastQR?.payload) { showToast('Gere um QR Code primeiro.', 'error'); return; }
+      navigator.clipboard.writeText(lastQR.payload).then(()=> showToast('Código copiado!', 'success')).catch(()=> showToast('Não foi possível copiar.', 'error'));
+    }
+
+    function togglePayloadView(){ D.payload.style.display = D.payload.style.display === 'block' ? 'none' : 'block'; }
+
+    // Export functions
+    async function exportJSON(){
+      try {
+        const records = await fetchHistory();
+        if (records.length === 0){ showToast('Nenhum dado para exportar.', 'warn'); return; }
+        const blob = new Blob([JSON.stringify(records, null, 2)], { type:'application/json' });
+        const filename = `pix-history-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+        saveAs(blob, filename);
+        showToast('JSON exportado!', 'success');
+      } catch(e){ console.error('exportJSON', e); showToast('Erro ao exportar JSON.', 'error'); }
+    }
+
+    async function exportExcel(){
+      try {
+        const records = await fetchHistory();
+        if (records.length === 0){ showToast('Nenhum dado para exportar.', 'warn'); return; }
+        const sheetData = records.map(r=>({
+          ID: r.id, Nome: r.name, Chave: r.pixKey, Valor: r.amount, Status: r.status, TXID: r.txid, Descrição: r.description, Criado: r.createdAt
+        }));
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(sheetData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Histórico PIX');
+        const wbout = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+        const filename = `pix-history-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.xlsx`;
+        saveAs(new Blob([wbout], { type:'application/octet-stream' }), filename);
+        showToast('Excel exportado!', 'success');
+      } catch(e){ console.error('exportExcel', e); showToast('Erro ao exportar Excel.', 'error'); }
+    }
+
+    // Export PDF using jsPDF autoTable for a table-like layout (Excel-ish)
+    async function exportPDFTable(records){
+      try {
+        if (!records || records.length === 0) { showToast('Nenhum registro para exportar.', 'warn'); return; }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation:'portrait', unit:'pt', format:'a4' });
+        const title = 'Relatório PIX Manager Pro';
+        doc.setFontSize(14); doc.text(title, 40, 40);
+        doc.setFontSize(10); doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 40, 60);
+        // prepare table
+        const head = [['#','Nome','Chave','Valor','Status','Data','TXID']];
+        const body = records.map((r, idx) => [
+          String(r.id),
+          String(r.name || '-'),
+          String(r.pixKey || '-'),
+          formatBRL(r.amount),
+          r.status === 'received' ? 'Recebido' : 'Pendente',
+          new Date(r.createdAt).toLocaleString('pt-BR'),
+          String(r.txid || '-')
+        ]);
+        // add totals row
+        const totalValue = records.reduce((s,r)=>s+(Number(r.amount)||0),0);
+        // autoTable
+        doc.autoTable({
+          startY: 80,
+          head: head,
+          body: body,
+          styles: { fontSize: 9, cellPadding: 6 },
+          headStyles: { fillColor: [100,100,255], textColor: 255 },
+          willDrawCell: function(data) {
+            // can add custom per-cell styling if desired
+          },
+          didDrawPage: function (data) {
+            // page footer
+            const page = doc.internal.getNumberOfPages();
+            doc.setFontSize(9);
+            doc.text(`Página ${page}`, doc.internal.pageSize.width - 60, doc.internal.pageSize.height - 30);
+          }
+        });
+        // add totals after table end
+        const finalY = doc.lastAutoTable.finalY || doc.lastAutoTable.finalY === 0 ? doc.lastAutoTable.finalY + 10 : doc.previousAutoTable ? doc.previousAutoTable.finalY + 10 : 80;
+        doc.setFontSize(11);
+        doc.text(`Total registros: ${records.length} — Valor total: ${formatBRL(totalValue)}`, 40, finalY + 20);
+        const filename = `pix-relatorio-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.pdf`;
+        doc.save(filename);
+        showToast('PDF exportado (tabela)!', 'success');
+      } catch(e){ console.error('exportPDFTable', e); showToast('Erro ao exportar PDF.', 'error'); }
+    }
+
+    // Modal for import
+    async function importJSON(){
+      const file = D.fileImport.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!Array.isArray(data)) { showToast('JSON inválido.', 'error'); return; }
+        if (!confirm('Substituir dados atuais? Clique OK para substituir ou Cancelar para acrescentar.')) return;
+        await idbClear(STORE_HISTORY);
+        let imported = 0;
+        for (const item of data){
+          const record = {
+            payload: item.payload || '',
+            txid: item.txid || genTXID(),
+            pixKey: item.pixKey || '',
+            keyType: item.keyType || 'cpf',
+            name: item.name || '',
+            city: item.city || '',
+            amount: Number(item.amount || 0),
+            description: item.description || '',
+            status: item.status || 'pending',
+            createdAt: item.createdAt || new Date().toISOString(),
+            payerKey: item.payerKey || '',
+            payerKeyType: item.payerKeyType || '',
+            receiverId: item.receiverId || null
+          };
+          await idbPut(STORE_HISTORY, record);
+          imported++;
+        }
+        showToast(`${imported} registros importados!`, 'success');
+        await refreshHistoryTable();
+      } catch(e){ console.error('importJSON', e); showToast('Erro ao importar JSON.', 'error'); }
+      D.fileImport.value = '';
+    }
+
+    // Theme
+    function initTheme(){ const saved = localStorage.getItem('pixmanager_theme') || 'light'; applyTheme(saved); }
+    function applyTheme(t){ document.body.setAttribute('data-theme', t); D.btnTheme.textContent = t === 'dark' ? '☀️' : '🌙'; localStorage.setItem('pixmanager_theme', t); }
+    function toggleTheme(){ applyTheme(document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); showToast('Tema alterado', 'info'); }
+
+    // Event listeners
+    function setupEventListeners(){
+      D.tabGen.addEventListener('click', ()=> switchTab(D.tabGen, D.viewGen));
+      D.tabHist.addEventListener('click', ()=> { switchTab(D.tabHist, D.viewHist); refreshHistoryTable(); });
+
+      D.btnGenerate.addEventListener('click', generateQR);
+      D.btnClear.addEventListener('click', ()=> {
+        D.amount.value=''; D.description.value=''; D.payerKey.value=''; hideFieldError(D.amountError); hideFieldError(D.payerKeyError); clearQR(); updateCurrentCharge(null);
+        showToast('Campos limpos.', 'info');
+      });
+
+      D.btnDownload.addEventListener('click', downloadQR);
+      D.btnCopy.addEventListener('click', copyPayload);
+      D.btnViewPayload.addEventListener('click', togglePayloadView);
+
+      D.btnReceiverConfig.addEventListener('click', ()=> { openConfigPanel(); });
+      D.btnSaveConfig.addEventListener('click', saveReceiverConfig);
+      D.btnCancelConfig.addEventListener('click', closeConfigPanel);
+
+      D.btnApplyFilter.addEventListener('click', ()=> { CURRENT_PAGE = 1; refreshHistoryTable(); });
+      D.btnResetFilter.addEventListener('click', ()=> { D.filterSearch.value=''; D.filterStatus.value='all'; CURRENT_PAGE=1; refreshHistoryTable(); });
+
+      let searchTimeout;
+      D.filterSearch.addEventListener('input', ()=> { clearTimeout(searchTimeout); searchTimeout = setTimeout(()=>{ CURRENT_PAGE=1; refreshHistoryTable(); }, 300); });
+
+      D.btnClearHistory.addEventListener('click', async ()=> {
+        if (!confirm('Limpar todo o histórico?')) return;
+        try { await idbClear(STORE_HISTORY); await refreshHistoryTable(); showToast('Histórico limpo.', 'success'); } catch(e){ showToast('Erro ao limpar histórico.', 'error'); }
+      });
+
+      D.btnTheme.addEventListener('click', toggleTheme);
+
+      // export/import modal
+      D.btnExportImport.addEventListener('click', ()=> { D.modalExportImport.style.display = 'block'; });
+      D.modalClose.addEventListener('click', ()=> { D.modalExportImport.style.display = 'none'; });
+
+      D.expJson.addEventListener('click', exportJSON);
+      D.expXlsx.addEventListener('click', exportExcel);
+      D.expPdfModal.addEventListener('click', async ()=> { const rec = await fetchHistory(); exportPDFTable(rec); });
+      D.impJson.addEventListener('click', ()=> D.fileImport.click());
+      D.fileImport.addEventListener('change', importJSON);
+
+      D.prevPage.addEventListener('click', ()=> { if (CURRENT_PAGE>1) { CURRENT_PAGE--; refreshHistoryTable(); } });
+      D.nextPage.addEventListener('click', ()=> { const totalPages = Math.max(1, Math.ceil(LAST_FILTERED.length / PAGE_SIZE)); if (CURRENT_PAGE < totalPages) { CURRENT_PAGE++; refreshHistoryTable(); } });
+
+      D.btnExportPDFTable.addEventListener('click', async ()=> { const all = LAST_FILTERED.length ? LAST_FILTERED : await fetchHistory(); exportPDFTable(all); });
+    }
+
+    function switchTab(tabEl, viewEl){
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      tabEl.classList.add('active');
+      document.querySelectorAll('[id^="view-"]').forEach(v=>v.style.display='none');
+      viewEl.style.display='block';
+    }
+
+    // initialize
+    async function initializeApp(){
+      try {
+        setupKeySelects(); setupInputMasks(); setupEventListeners(); initTheme();
+        await openDB(); await loadReceiverConfig();
+        clearQR(); updateCurrentCharge(null);
+        await refreshHistoryTable();
+
+        // restore last QR if exists
+        const lastId = localStorage.getItem('pix_last_id');
+        if (lastId) {
+          const rec = await idbGet(STORE_HISTORY, Number(lastId));
+          if (rec) { previewQR(Number(lastId)); }
+          else { localStorage.removeItem('pix_last_id'); }
+        }
+
+        // welcome toast once
+        if (!localStorage.getItem('pixmanager_welcomed')) { setTimeout(()=> { if (!receiverConfig) showToast('Configure o recebedor para começar!', 'info'); localStorage.setItem('pixmanager_welcomed','1'); }, 1200); }
+
+      } catch(e){ console.error('initializeApp', e); showToast('Erro ao inicializar. Recarregue a página.', 'error'); }
+    }
+
+    // load
+    initializeApp();
+
+    // expose some functions for inline buttons
+    window.previewQR = window.previewQR;
+    window.toggleStatus = window.toggleStatus;
+    window.deleteRecord = window.deleteRecord;
+
+    // small safety: prevent HTML injection in places where innerHTML used (we used escapeHTML when rendering)
+  </script>
+</body>
+</html>
